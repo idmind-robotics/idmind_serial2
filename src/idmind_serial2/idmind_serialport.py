@@ -8,7 +8,7 @@ from threading import Lock
 class IDMindSerial(serial.Serial):
     """Driver to connect to serial devices (imu, boards...)"""
 
-    def __init__(self, addr, baudrate=115200, timeout=2, verify_checksum=False, verbose=False):
+    def __init__(self, addr, baudrate=115200, timeout=2, verify_checksum=False, verbose=0):
         """
         Initiates the serial connection with the device in address addr, using a specified baudrate.
         :param addr:
@@ -21,32 +21,42 @@ class IDMindSerial(serial.Serial):
 
         try:
             serial.Serial.__init__(self, port=addr, baudrate=baudrate, timeout=timeout)
-            print "Connection to " + addr + " was successful"
+            if self.verbose > 5:
+                print "Connection to " + addr + " was successful"
         except serial.SerialException as e:
-            print("Connection to "+addr+" failed with: " + str(e))
+            if self.verbose > 5:
+                print("Connection to "+addr+" failed with: " + str(e))
             raise serial.SerialException(e)
 
     @staticmethod
-    def to_bytes(val):
+    def to_bytes(val, nr_bytes=2):
         """
-        Transforms an integer [-32767, 32767] to 2 bytes
+        NEW: Transforms an integer into the requested number of bytes
+        OLD: Transforms an integer [-32767, 32767] to 2 bytes
         :param val:
-        :return [high_byte, low_byte]:
+        :param nr_bytes: number of bytes to convert to
+        :return [higher_byte, ...lower_byte]:
         """
         val = int(val)
-        return [(val >> 8) & 0xFF, val & 0xFF]
+        msg = []
+        for i in range(nr_bytes, 0, -1):
+            msg.append((val >> 8*(i-1)) & 0xFF)
+        return msg
 
     @staticmethod
-    def to_num(b_high, b_low):
+    def to_num(b_array, unsigned=False):
         """
-        Transforms [b_high, b_low] to an integer [-32767, 32767]
-        :param b_high:  HIGH Byte
-        :param b_low:   LOW Byte
-        :return res:    Integer in range [-32767, 32767]
+        Transforms a bytearray to an integer
+        :param b_array:     Bytearray
+        :param unsigned:    If true, returns unsigned [0, 65535], else returns in range [-32767, 32767]
+        :return res:        Integer
         """
-        res = (ord(b_high) << 8) | (ord(b_low) & 0xFF)
-        if res > 32767:
-            res = res - 65536
+        byte_nr = len(b_array)
+        res = 0
+        for idx in range(0, byte_nr):
+            res = res | (ord(b_array[idx]) << 8*(byte_nr-idx-1))
+        if res > pow(2, 8*byte_nr)/2 and not unsigned:
+            res = -(pow(2, 8*byte_nr)-res+1)
         return res
 
     def command(self, msg, nr_bytes, tries=5):
@@ -79,7 +89,7 @@ class IDMindSerial(serial.Serial):
             elif b != len(msg):
                 raise serial.SerialException(3, "Failed to send complete message")
             else:
-                if self.verbose:
+                if self.verbose > 8:
                     print "Message {} send".format(msg)
 
             res = self.read_command(nr_bytes=nr_bytes, tries=tries)
@@ -148,9 +158,11 @@ class IDMindSerial(serial.Serial):
     def restart_port(self):
         try:
             serial.Serial.__init__(self, port=self.port, baudrate=self.baudrate, timeout=self.timeout)
-            print "Connection to " + self.port + " was successful"
+            if self.verbose > 5:
+                print "Connection to " + self.port + " was successful"
         except serial.SerialException as e:
-            print("Connection to "+self.port+" failed with: " + str(e))
+            if self.verbose > 5:
+                print("Connection to "+self.port+" failed with: " + str(e))
             raise serial.SerialException(e)
 
 
