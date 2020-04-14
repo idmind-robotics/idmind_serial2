@@ -156,6 +156,10 @@ class IDMindSerial(serial.Serial):
         return res
 
     def restart_port(self):
+        self.flush()
+        self.reset_input_buffer()
+        self.reset_output_buffer()
+        self.close()
         try:
             serial.Serial.__init__(self, port=self.port, baudrate=self.baudrate, timeout=self.timeout)
             if self.verbose > 5:
