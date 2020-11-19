@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-import time
 import serial
+import subprocess
 from threading import Lock
+import time
 
 
 class IDMindSerial(serial.Serial):
     """Driver to connect to serial devices (imu, boards...)"""
 
-    def __init__(self, addr, baudrate=115200, timeout=2, verify_checksum=False, verbose=0):
+    def __init__(self, addr, baudrate=115200, timeout=2, verify_checksum=False, verbose=0, set_low_latency=False):
         """
         Initiates the serial connection with the device in address addr, using a specified baudrate.
         :param addr:
@@ -18,15 +19,27 @@ class IDMindSerial(serial.Serial):
         self.verbose = verbose
         self.verify_checksum = verify_checksum
         self.mutex = Lock()
+        self.is_set_low_latency = set_low_latency
 
         try:
-            serial.Serial.__init__(self, port=addr, baudrate=baudrate, timeout=timeout)
+            super(IDMindSerial, self).__init__(port=addr, baudrate=baudrate, timeout=timeout)
             if self.verbose > 5:
                 print "Connection to " + addr + " was successful"
         except serial.SerialException as e:
             if self.verbose > 5:
                 print("Connection to "+addr+" failed with: " + str(e))
             raise serial.SerialException(e)
+
+        self.set_low_latency(self.is_set_low_latency)
+
+    def set_low_latency(self, is_set_low_latency):
+        if is_set_low_latency:
+            try:
+                subprocess.check_call(['setserial', self.port, 'low_latency'])
+            except subprocess.CalledProcessError as e:
+                if self.verbose > 2:
+                    print("\tUnable to set low latency - {}".format(e.returncode))
+                raise serial.SerialException("Unable to set low latency in port {} ({})".format(self.port, str(e)))
 
     @staticmethod
     def to_bytes(val, nr_bytes=2):
@@ -155,19 +168,25 @@ class IDMindSerial(serial.Serial):
                 time.sleep(0.01)
         return res
 
-    def restart_port(self):
+    def disconnect(self):
         self.flush()
         self.reset_input_buffer()
         self.reset_output_buffer()
         self.close()
+
+    def restart_port(self):
+        self.disconnect()
         try:
-            serial.Serial.__init__(self, port=self.port, baudrate=self.baudrate, timeout=self.timeout)
+            self.open()
+            # serial.Serial.__init__(self, port=self.port, baudrate=self.baudrate, timeout=self.timeout)
             if self.verbose > 5:
                 print "Connection to " + self.port + " was successful"
+
+            self.set_low_latency(self.is_set_low_latency)
         except serial.SerialException as e:
             if self.verbose > 5:
-                print("Connection to "+self.port+" failed with: " + str(e))
-            raise serial.SerialException(e)
+                print("Error restarting port %s (%s)" % (self.port, str(e)))
+            raise serial.SerialException("Error restarting port %s (%s)" % (self.port, str(e)))
 
 
 if __name__ == ":_main__":
