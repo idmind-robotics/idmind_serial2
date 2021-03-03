@@ -2,6 +2,7 @@
 
 import time
 import serial
+import struct
 from threading import Lock
 
 
@@ -56,7 +57,7 @@ class IDMindSerial(serial.Serial):
         for idx in range(0, byte_nr):
             res = res | (ord(b_array[idx]) << 8*(byte_nr-idx-1))
         if res > pow(2, 8*byte_nr)/2 and not unsigned:
-            res = -(pow(2, 8*byte_nr)-res+1)
+            res = -(pow(2, 8*byte_nr)-res)
         return res
 
     def command(self, msg, nr_bytes, tries=5):
