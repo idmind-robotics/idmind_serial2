@@ -23,7 +23,7 @@ class IDMindSerial(serial.Serial):
         try:
             serial.Serial.__init__(self, port=addr, baudrate=baudrate, timeout=timeout)
             if self.verbose > 5:
-                print "Connection to " + addr + " was successful"
+                print("Connection to " + addr + " was successful")
         except serial.SerialException as e:
             if self.verbose > 5:
                 print("Connection to "+addr+" failed with: " + str(e))
@@ -91,7 +91,7 @@ class IDMindSerial(serial.Serial):
                 raise serial.SerialException(3, "Failed to send complete message")
             else:
                 if self.verbose > 8:
-                    print "Message {} send".format(msg)
+                    print("Message {} send".format(msg))
 
             res = self.read_command(nr_bytes=nr_bytes, tries=tries)
             if res == 0:
@@ -130,7 +130,7 @@ class IDMindSerial(serial.Serial):
                 return res
             except serial.SerialException as e:
                 if self.verbose:
-                    print e
+                    print(e)
                 t = t + 1
                 time.sleep(0.01)
 
@@ -151,7 +151,7 @@ class IDMindSerial(serial.Serial):
                 return res
             except serial.SerialException as e:
                 if self.verbose:
-                    print e
+                    print(e)
                 t = t + 1
                 time.sleep(0.01)
         return res
@@ -164,7 +164,7 @@ class IDMindSerial(serial.Serial):
         try:
             serial.Serial.__init__(self, port=self.port, baudrate=self.baudrate, timeout=self.timeout)
             if self.verbose > 5:
-                print "Connection to " + self.port + " was successful"
+                print("Connection to " + self.port + " was successful")
         except serial.SerialException as e:
             if self.verbose > 5:
                 print("Connection to "+self.port+" failed with: " + str(e))
