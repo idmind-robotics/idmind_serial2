@@ -14,6 +14,6 @@
     <depend>rospy</depend>
     <!-- IDMind -->
     <!-- Python -->
-    <exec_depend>python-pyserial</exec_depend>
+    <exec_depend>python-serial</exec_depend>
 
 </package>
