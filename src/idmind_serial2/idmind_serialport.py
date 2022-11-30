@@ -55,7 +55,7 @@ class IDMindSerial(serial.Serial):
         byte_nr = len(b_array)
         res = 0
         for idx in range(0, byte_nr):
-            res = res | (ord(b_array[idx]) << 8*(byte_nr-idx-1))
+            res = res | (b_array[idx] << 8*(byte_nr-idx-1))
         if res > pow(2, 8*byte_nr)/2 and not unsigned:
             res = -(pow(2, 8*byte_nr)-res)
         return res
@@ -101,8 +101,8 @@ class IDMindSerial(serial.Serial):
             else:
                 if self.verify_checksum:
                     checksum = self.to_num(res[-2], res[-1])
-                    bytesum = reduce(lambda x, y: x + y, [ord(el) for el in res[:-2]])
-                    if ord(res[0]) == msg[0] and checksum == (bytesum & 0xffff):
+                    bytesum = reduce(lambda x, y: x + y, [el for el in res[:-2]])
+                    if res[0] == msg[0] and checksum == (bytesum & 0xffff):
                         return res
                     else:
                         serial.SerialException(4, "Checksum error")
