@@ -55,7 +55,10 @@ class IDMindSerial(serial.Serial):
         byte_nr = len(b_array)
         res = 0
         for idx in range(0, byte_nr):
-            res = res | (ord(b_array[idx]) << 8*(byte_nr-idx-1))
+            if type(b_array[0]) is int:
+                res = res | (b_array[idx] << 8*(byte_nr-idx-1))
+            else:
+                res = res | (ord(b_array[idx]) << 8*(byte_nr-idx-1))
         if res > pow(2, 8*byte_nr)/2 and not unsigned:
             res = -(pow(2, 8*byte_nr)-res)
         return res
